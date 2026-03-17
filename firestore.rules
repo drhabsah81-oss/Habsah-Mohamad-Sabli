@@ -1,0 +1,81 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: modules
+    // Document ID: auto-generated
+    // Fields:
+    //   - userId: string (required) - UID of the creator
+    //   - course: string (required)
+    //   - topic: string (required)
+    //   - level: string
+    //   - duration: string
+    //   - mode: string
+    //   - outcomes: string
+    //   - skillFocus: list
+    //   - teachingStyle: string
+    //   - language: string
+    //   - assessmentType: string
+    //   - specialRequirements: list
+    //   - content: map (required) - The AI generated content
+    //   - createdAt: timestamp (required)
+    //   - isFavourite: bool
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "drhabsah81@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidModule(data) {
+      return data.userId is string &&
+             data.course is string && data.course.size() > 0 && data.course.size() < 500 &&
+             data.topic is string && data.topic.size() > 0 && data.topic.size() < 500 &&
+             data.content is map &&
+             data.createdAt is timestamp &&
+             (!('level' in data) || (data.level is string && data.level.size() < 100)) &&
+             (!('duration' in data) || (data.duration is string && data.duration.size() < 100)) &&
+             (!('mode' in data) || (data.mode is string && data.mode.size() < 100)) &&
+             (!('outcomes' in data) || (data.outcomes is string && data.outcomes.size() < 2000)) &&
+             (!('teachingStyle' in data) || (data.teachingStyle is string && data.teachingStyle.size() < 100)) &&
+             (!('language' in data) || (data.language is string && data.language.size() < 100)) &&
+             (!('assessmentType' in data) || (data.assessmentType is string && data.assessmentType.size() < 100)) &&
+             (!('isFavourite' in data) || (data.isFavourite is bool)) &&
+             (!('skillFocus' in data) || (data.skillFocus is list && data.skillFocus.size() < 20)) &&
+             (!('specialRequirements' in data) || (data.specialRequirements is list && data.specialRequirements.size() < 20));
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /modules/{moduleId} {
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow create: if isAuthenticated() && isValidModule(request.resource.data) && isOwner(request.resource.data.userId);
+      allow update: if isOwner(resource.data.userId) && isValidModule(request.resource.data) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isOwner(resource.data.userId) || isAdmin();
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isAdmin();
+    }
+  }
+}

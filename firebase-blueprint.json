@@ -1,0 +1,34 @@
+{
+  "entities": {
+    "Module": {
+      "title": "Teaching Module",
+      "description": "A generated teaching module for lecturers.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "course": { "type": "string" },
+        "topic": { "type": "string" },
+        "level": { "type": "string" },
+        "duration": { "type": "string" },
+        "mode": { "type": "string" },
+        "outcomes": { "type": "string" },
+        "skillFocus": { "type": "array", "items": { "type": "string" } },
+        "teachingStyle": { "type": "string" },
+        "language": { "type": "string" },
+        "assessmentType": { "type": "string" },
+        "specialRequirements": { "type": "array", "items": { "type": "string" } },
+        "content": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "isFavourite": { "type": "boolean" }
+      },
+      "required": ["userId", "course", "topic", "content", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/modules/{moduleId}": {
+      "schema": "Module",
+      "description": "Collection of generated teaching modules."
+    }
+  }
+}
